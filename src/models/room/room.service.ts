@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, RootFilterQuery } from 'mongoose';
 import { Constants, Database } from 'src/config';
 import { Room, RoomDocument, RoomParticipantDocument } from './room.schema';
-import { UserDocument } from '../user/user.schema';
+import { User, UserDocument } from '../user/user.schema';
 import { UserService } from '../user/user.service';
 import { ParticipantResponse, RoomResponse } from './room.dto';
 import { UserResponse } from '../user/user.dto';
@@ -222,7 +222,7 @@ export class RoomService {
 
     let roomName: string | undefined = undefined;
     if (room.type === RoomTypes.Private && userId) {
-      const ps = participants.filter((p) => p.user.id != userId);
+      const ps = participants.filter((p) => p.user._id + '' !== userId);
       roomName = ps[0] ? ps[0].user.name : room.name;
     }
 
@@ -247,22 +247,17 @@ export class RoomService {
   }
 
   async getRoomParticipants(room: Room) {
-    const participantsResponse: ParticipantResponse[] = [];
-    for (let i = 0; i < room.participants.length; i++) {
-      const user = await this.userService.checkFoundById(
-        room.participants[i].userId + '',
-      );
+    const participants: {
+      user: User | undefined;
+      role: Constants.ParticipantRoles;
+    }[] = await Promise.all(
+      room.participants.map(async (p) => ({
+        user: await this.userService.findById(p.userId + ''),
+        role: p.role,
+      })),
+    );
 
-      const userResponse = await this.userService.makeUserResponse(user);
-
-      const participantResponse = await this.makeParticipantResponse(
-        userResponse,
-        room.participants[i].role,
-      );
-      participantsResponse.push(participantResponse);
-    }
-
-    return participantsResponse;
+    return participants;
   }
 
   async makeParticipantResponse(
@@ -270,6 +265,23 @@ export class RoomService {
     role: Constants.ParticipantRoles,
   ) {
     return new ParticipantResponse(user, role);
+  }
+
+  async makeParticipantsResponse(
+    participants: {
+      user: User | undefined;
+      role: Constants.ParticipantRoles;
+    }[],
+  ) {
+    const participantsResponse: ParticipantResponse[] = await Promise.all(
+      participants.map(async (p) => {
+        const userResponse = await this.userService.makeUserResponse(p.user);
+
+        return await this.makeParticipantResponse(userResponse, p.role);
+      }),
+    );
+
+    return participantsResponse;
   }
 
   async makeRoomArrayDataResponse(

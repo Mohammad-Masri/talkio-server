@@ -124,7 +124,10 @@ export class RoomManagementController {
   @ApiNotFoundResponse({ description: 'Room not found' })
   async fetchRoomParticipantsDetails(@Param('id') id: string) {
     const room = await this.roomService.checkFoundById(id);
-    return await this.roomService.getRoomParticipants(room);
+
+    const participants = await this.roomService.getRoomParticipants(room);
+
+    return await this.roomService.makeParticipantsResponse(participants);
   }
 
   @Put('/:id')
@@ -172,7 +175,9 @@ export class RoomManagementController {
       body.participants,
     );
 
-    return await this.roomService.getRoomParticipants(room);
+    const participants = await this.roomService.getRoomParticipants(room);
+
+    return await this.roomService.makeParticipantsResponse(participants);
   }
 
   @Put('/:id/participants/remove')
@@ -196,7 +201,9 @@ export class RoomManagementController {
       id,
       body.participantIds,
     );
-    return await this.roomService.getRoomParticipants(room);
+    const participants = await this.roomService.getRoomParticipants(room);
+
+    return await this.roomService.makeParticipantsResponse(participants);
   }
 
   @Delete('/:id')

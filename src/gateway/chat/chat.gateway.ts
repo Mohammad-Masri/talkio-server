@@ -183,8 +183,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
     if (!valid) return;
 
-    console.log(client.data);
-
     const room = await this.roomService.findById(body.roomId);
 
     if (room) {

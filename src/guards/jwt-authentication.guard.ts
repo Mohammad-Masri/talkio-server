@@ -43,8 +43,6 @@ export class JWTAuthGuard implements CanActivate {
         secret: JWT_SECRET_KEY,
       });
 
-      console.log('payload\n', payload);
-
       request.context = {
         id: payload.id,
         user: undefined,

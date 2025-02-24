@@ -1,5 +1,5 @@
 {
-  "name": "connect-server",
+  "name": "talkio-server",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -32,7 +32,6 @@
     "@nestjs/websockets": "^10.4.15",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
-    "connect-server": "file:",
     "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.0",
@@ -40,7 +39,8 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "talkio-server": "file:"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

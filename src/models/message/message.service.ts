@@ -1,7 +1,7 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, RootFilterQuery } from 'mongoose';
-import { Database } from 'src/config';
+import { Constants, Database } from 'src/config';
 import { Message, MessageDocument } from './message.schema';
 import { MessageAttachmentDocument } from './message-attachment.schema';
 import { MessageReadDocument } from './message-read.schema';
@@ -9,7 +9,7 @@ import { RoomService } from '../room/room.service';
 import { UserService } from '../user/user.service';
 import { SendMessageInput } from 'src/gateway/chat/dto';
 import { MessageResponse } from './message.dto';
-import { ParticipantResponse } from '../room/room.dto';
+import { User } from '../user/user.schema';
 
 @Injectable()
 export class MessageService {
@@ -81,13 +81,20 @@ export class MessageService {
 
   async makeMessageResponse(
     message: Message,
-    participants: ParticipantResponse[],
+    participants: {
+      user: User | undefined;
+      role: Constants.ParticipantRoles;
+    }[],
   ) {
     const participant = participants.find(
-      (p) => p.user.id === message.sender + '',
+      (p) => p.user._id + '' === message.sender + '',
     );
 
-    return new MessageResponse(message, participant?.user);
+    const userResponse = await this.userService.makeUserResponse(
+      participant.user,
+    );
+
+    return new MessageResponse(message, userResponse);
   }
 
   async makeMessagesResponse(messages: Message[], roomId: string) {

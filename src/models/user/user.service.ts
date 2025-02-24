@@ -134,7 +134,8 @@ export class UserService {
     return new LoginResponse(userResponse, token);
   }
 
-  async makeUserResponse(user: User) {
+  async makeUserResponse(user: User | undefined) {
+    if (!user) return undefined;
     return new UserResponse(user);
   }
 
