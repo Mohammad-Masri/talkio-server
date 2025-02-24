@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, RootFilterQuery } from 'mongoose';
 import { Constants, Database } from 'src/config';
@@ -9,6 +14,8 @@ import { ParticipantResponse, RoomResponse } from './room.dto';
 import { UserResponse } from '../user/user.dto';
 import { RoomArrayDataResponse } from 'src/controllers/room/dto';
 import { MessageResponse } from '../message/message.dto';
+import { MessageService } from '../message/message.service';
+import { RoomTypes } from 'src/config/constants';
 
 @Injectable()
 export class RoomService {
@@ -18,6 +25,8 @@ export class RoomService {
     @InjectModel(Database.Collections.RoomParticipant)
     private roomParticipantModel: Model<RoomParticipantDocument>,
     private readonly userService: UserService,
+    @Inject(forwardRef(() => MessageService))
+    private readonly messageService: MessageService,
   ) {}
 
   async findById(id: string) {
@@ -203,28 +212,41 @@ export class RoomService {
     return room;
   }
 
-  async makeRoomResponse(room: Room) {
-    const lastMessageResponse: MessageResponse | undefined = undefined;
+  async makeRoomResponse(room: Room, userId: string | undefined) {
+    let lastMessageResponse: MessageResponse | undefined = undefined;
 
-    // if(room.lastMessage){
-    //  const message = room.populate('lastMessage')
-    //  const lastMessageResponse = await this.mae
-    // }
+    const [participants, message] = await Promise.all([
+      this.getRoomParticipants(room),
+      this.messageService.findById(room.lastMessage + ''),
+    ]);
 
-    return new RoomResponse(room, lastMessageResponse);
+    let roomName: string | undefined = undefined;
+    if (room.type === RoomTypes.Private && userId) {
+      const ps = participants.filter((p) => p.user.id != userId);
+      roomName = ps[0] ? ps[0].user.name : room.name;
+    }
+
+    if (message) {
+      lastMessageResponse = await this.messageService.makeMessageResponse(
+        message,
+        participants,
+      );
+    }
+
+    return new RoomResponse(room, lastMessageResponse, roomName);
   }
 
-  async makeRoomsResponse(rooms: Room[]) {
+  async makeRoomsResponse(rooms: Room[], userId: string | undefined) {
     const roomsResponse: RoomResponse[] = [];
     for (let i = 0; i < rooms.length; i++) {
       const room = rooms[i];
-      const roomResponse = await this.makeRoomResponse(room);
+      const roomResponse = await this.makeRoomResponse(room, userId);
       roomsResponse.push(roomResponse);
     }
     return roomsResponse;
   }
 
-  async getRoomParticipants(room: RoomDocument) {
+  async getRoomParticipants(room: Room) {
     const participantsResponse: ParticipantResponse[] = [];
     for (let i = 0; i < room.participants.length; i++) {
       const user = await this.userService.checkFoundById(

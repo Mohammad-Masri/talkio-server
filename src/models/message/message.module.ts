@@ -1,11 +1,12 @@
-import { Module, ModuleMetadata } from '@nestjs/common';
+import { forwardRef, Module, ModuleMetadata } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Database } from 'src/config';
 import { MessageSchema } from './message.schema';
 import { MessageService } from './message.service';
 import { MessageAttachmentSchema } from './message-attachment.schema';
 import { MessageReadSchema } from './message-read.schema';
-import { RoomModuleDependencies } from '../room/room.module';
+import { RoomModule } from '../room/room.module';
+import { UserModule } from '../user/user.module';
 
 export const MessageModuleDependencies: ModuleMetadata = {
   imports: [
@@ -24,13 +25,15 @@ export const MessageModuleDependencies: ModuleMetadata = {
         schema: MessageReadSchema,
       },
     ]),
-    ...RoomModuleDependencies.imports,
+    forwardRef(() => RoomModule), // Import RoomModule to access RoomService
+    UserModule, // Import UserModule explicitly
   ],
-  providers: [MessageService, ...RoomModuleDependencies.providers],
+  providers: [MessageService],
 };
 
 @Module({
   imports: [...MessageModuleDependencies.imports],
   providers: [...MessageModuleDependencies.providers],
+  exports: [MessageService],
 })
 export class MessageModule {}

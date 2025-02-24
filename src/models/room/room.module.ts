@@ -1,9 +1,10 @@
-import { Module, ModuleMetadata } from '@nestjs/common';
+import { forwardRef, Module, ModuleMetadata } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Database } from 'src/config';
 import { RoomParticipantSchema, RoomSchema } from './room.schema';
 import { RoomService } from './room.service';
-import { UserModuleDependencies } from '../user/user.module';
+import { UserModule } from '../user/user.module';
+import { MessageModule } from '../message/message.module';
 
 export const RoomModuleDependencies: ModuleMetadata = {
   imports: [
@@ -16,13 +17,17 @@ export const RoomModuleDependencies: ModuleMetadata = {
         schema: RoomParticipantSchema,
       },
     ]),
-    ...UserModuleDependencies.imports,
+    forwardRef(() => MessageModule),
+    UserModule, // Import required modules explicitly
+    // MessageModule, // Import MessageModule here
+    // ...UserModuleDependencies.imports,
   ],
-  providers: [RoomService, ...UserModuleDependencies.providers],
+  providers: [RoomService],
 };
 
 @Module({
   imports: [...RoomModuleDependencies.imports],
   providers: [...RoomModuleDependencies.providers],
+  exports: [RoomService],
 })
 export class RoomModule {}

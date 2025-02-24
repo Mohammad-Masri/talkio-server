@@ -21,6 +21,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import { RoomService } from 'src/models/room/room.service';
 import { MessageService } from 'src/models/message/message.service';
+import { UserService } from 'src/models/user/user.service';
 
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/gateway/chat' })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -32,6 +33,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly serverConfigService: ServerConfigService,
     private readonly roomService: RoomService,
     private readonly messageService: MessageService,
+    private readonly userService: UserService,
   ) {}
 
   private async getValidationErrors(
@@ -115,6 +117,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       roomIds.map((roomId) =>
         client.emit(ChatEvents.Send.RoomJoined, { roomId }),
       );
+
+      this.userService.setOnline(client.data.id, true);
     } catch (error: any) {
       client.emit('error', `Authorization failed!, ${error.message}`);
       client.disconnect();
@@ -127,6 +131,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.emit(ChatEvents.Send.UserDisconnected, {
       id: client.data.id,
     });
+
+    this.userService.setOnline(client.data.id, false);
   }
 
   @SubscribeMessage(ChatEvents.Receive.JoinRoom)
@@ -179,14 +185,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     console.log(client.data);
 
-    const message = await this.messageService.create(client.data.id, body);
+    const room = await this.roomService.findById(body.roomId);
 
-    if (message) {
-      const messageResponse =
-        await this.messageService.makeMessageResponse(message);
-      this.server
-        .to(body.roomId)
-        .emit(ChatEvents.Send.MessageReceived, messageResponse);
+    if (room) {
+      const participants = await this.roomService.getRoomParticipants(room);
+
+      const message = await this.messageService.create(client.data.id, body);
+
+      if (message) {
+        const messageResponse = await this.messageService.makeMessageResponse(
+          message,
+          participants,
+        );
+        this.server
+          .to(body.roomId)
+          .emit(ChatEvents.Send.MessageReceived, messageResponse);
+      }
     }
   }
 

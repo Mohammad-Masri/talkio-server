@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, RootFilterQuery } from 'mongoose';
 import { Database } from 'src/config';
 import { Message, MessageDocument } from './message.schema';
 import { MessageAttachmentDocument } from './message-attachment.schema';
@@ -9,6 +9,7 @@ import { RoomService } from '../room/room.service';
 import { UserService } from '../user/user.service';
 import { SendMessageInput } from 'src/gateway/chat/dto';
 import { MessageResponse } from './message.dto';
+import { ParticipantResponse } from '../room/room.dto';
 
 @Injectable()
 export class MessageService {
@@ -19,9 +20,42 @@ export class MessageService {
     private messageAttachmentModel: Model<MessageAttachmentDocument>,
     @InjectModel(Database.Collections.MessageRead)
     private messageReadModel: Model<MessageReadDocument>,
-    private readonly roomService: RoomService,
+    @Inject(forwardRef(() => RoomService))
+    private readonly roomService: RoomService, // Use forwardRef
     private readonly userService: UserService,
   ) {}
+
+  async findById(id: string | undefined) {
+    if (id) {
+      return await this.messageModel.findById(id);
+    }
+    return undefined;
+  }
+
+  async findMessagesInRoom(
+    roomId: string,
+    lastMessageId: string | undefined,
+    page: number = 1,
+    limit: number = 100,
+  ) {
+    const filters: RootFilterQuery<Message> = {};
+    if (lastMessageId) {
+      filters._id = { $lt: lastMessageId };
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const messages = await this.messageModel
+      .find({ roomId, ...filters })
+      .skip(skip)
+      .limit(limit)
+      .sort({ _id: -1 })
+      .exec();
+
+    const hasMore = messages.length === limit;
+
+    return { messages, hasMore };
+  }
 
   async create(senderId: string, data: SendMessageInput) {
     const [room, user] = await Promise.all([
@@ -45,7 +79,28 @@ export class MessageService {
     return undefined;
   }
 
-  async makeMessageResponse(message: Message) {
-    return new MessageResponse(message);
+  async makeMessageResponse(
+    message: Message,
+    participants: ParticipantResponse[],
+  ) {
+    const participant = participants.find(
+      (p) => p.user.id === message.sender + '',
+    );
+
+    return new MessageResponse(message, participant?.user);
+  }
+
+  async makeMessagesResponse(messages: Message[], roomId: string) {
+    const room = await this.roomService.findById(roomId + '');
+    if (room) {
+      const participants = await this.roomService.getRoomParticipants(room);
+
+      const messagesResponse: MessageResponse[] = await Promise.all(
+        messages.map((m) => this.makeMessageResponse(m, participants)),
+      );
+
+      return messagesResponse;
+    }
+    return [];
   }
 }

@@ -90,6 +90,16 @@ export class UserService {
     return await user.save();
   }
 
+  async setOnline(userId: string, online: boolean) {
+    await this.userModel.updateOne(
+      { _id: userId },
+      {
+        isOnline: online,
+        lastSeen: new Date(),
+      },
+    );
+  }
+
   async delete(user: UserDocument) {
     // TODO: delete all related data
     return await user.deleteOne();

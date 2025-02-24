@@ -52,7 +52,7 @@ export class RoomManagementController {
       body.participants,
     );
 
-    return await this.roomService.makeRoomResponse(room);
+    return await this.roomService.makeRoomResponse(room, undefined);
   }
 
   @Get('/')
@@ -79,7 +79,10 @@ export class RoomManagementController {
       query.limit,
     );
 
-    const roomsResponse = await this.roomService.makeRoomsResponse(rooms);
+    const roomsResponse = await this.roomService.makeRoomsResponse(
+      rooms,
+      undefined,
+    );
 
     return await this.roomService.makeRoomArrayDataResponse(
       count,
@@ -103,7 +106,7 @@ export class RoomManagementController {
   @ApiNotFoundResponse({ description: 'Room not found' })
   async fetchRoomDetails(@Param('id') id: string) {
     const room = await this.roomService.checkFoundById(id);
-    return await this.roomService.makeRoomResponse(room);
+    return await this.roomService.makeRoomResponse(room, undefined);
   }
 
   @Get('/:id/participants')
@@ -144,7 +147,7 @@ export class RoomManagementController {
 
     room = await this.roomService.update(room, { name: body.name });
 
-    return await this.roomService.makeRoomResponse(room);
+    return await this.roomService.makeRoomResponse(room, undefined);
   }
 
   @Put('/:id/participants/add')
@@ -211,6 +214,6 @@ export class RoomManagementController {
   async deleteRoom(@Param('id') id: string) {
     const room = await this.roomService.checkFoundById(id);
     await this.roomService.delete(room);
-    return await this.roomService.makeRoomResponse(room);
+    return await this.roomService.makeRoomResponse(room, undefined);
   }
 }

@@ -1,7 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsIn, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsMongoId,
+  IsOptional,
+  IsString,
+  ValidateIf,
+} from 'class-validator';
 import { ArrayDataResponse, FindAllDto } from 'src/common/global.dto';
 import { Constants } from 'src/config';
+import { MessageResponse } from 'src/models/message/message.dto';
 import { RoomResponse } from 'src/models/room/room.dto';
 
 class ParticipantInput {
@@ -49,6 +57,15 @@ export class RemoveRoomParticipantsBody {
 
 export class FindAllRoomsDto extends FindAllDto {}
 
+export class FindRoomMessagesDto extends FindAllDto {
+  @ApiProperty({ nullable: true, required: false })
+  @IsOptional()
+  @IsString()
+  @ValidateIf((o) => o.lastMessageId !== '')
+  @IsMongoId()
+  lastMessageId?: string;
+}
+
 export class RoomArrayDataResponse extends ArrayDataResponse<RoomResponse> {
   @ApiProperty({ type: RoomResponse, isArray: true })
   data: RoomResponse[];
@@ -60,5 +77,17 @@ export class RoomArrayDataResponse extends ArrayDataResponse<RoomResponse> {
   ) {
     super(totalCount, data, page, limit);
     this.data = data;
+  }
+}
+
+export class MessagesResponse {
+  @ApiProperty({ type: MessageResponse, isArray: true })
+  data: MessageResponse[];
+
+  @ApiProperty({ type: Boolean })
+  hasMore: boolean;
+  constructor(messages: MessageResponse[], hasMore: boolean) {
+    this.data = messages;
+    this.hasMore = hasMore;
   }
 }

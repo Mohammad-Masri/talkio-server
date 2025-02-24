@@ -3,6 +3,7 @@ import { Room } from './room.schema';
 import { ApiProperty } from '@nestjs/swagger';
 import { UserResponse } from '../user/user.dto';
 import { MessageResponse } from '../message/message.dto';
+import { RoomTypes } from 'src/config/constants';
 
 export class RoomResponse {
   @ApiProperty()
@@ -16,9 +17,13 @@ export class RoomResponse {
   @ApiProperty({ type: MessageResponse, nullable: true })
   lastMessage: MessageResponse | undefined;
 
-  constructor(room: Room, lastMessage: MessageResponse | undefined) {
+  constructor(
+    room: Room,
+    lastMessage: MessageResponse | undefined,
+    roomName: string | undefined,
+  ) {
     this.id = room._id + '';
-    this.name = room.name;
+    this.name = room.type === RoomTypes.Private ? roomName : room.name;
     this.type = room.type;
     this.participantsCount = room.participants.length;
 

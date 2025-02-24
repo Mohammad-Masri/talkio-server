@@ -18,5 +18,6 @@ export const UserModuleDependencies: ModuleMetadata = {
 @Module({
   imports: [...UserModuleDependencies.imports],
   providers: [...UserModuleDependencies.providers],
+  exports: [UserService],
 })
 export class UserModule {}
