@@ -27,6 +27,10 @@ export class MessageAttachmentInput {
 export class MessageInput {
   @IsString()
   @IsOptional()
+  replyOn?: string;
+
+  @IsString()
+  @IsOptional()
   content?: string;
 
   @IsArray()

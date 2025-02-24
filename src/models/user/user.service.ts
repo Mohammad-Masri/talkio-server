@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, RootFilterQuery } from 'mongoose';
+import { Model, ObjectId, RootFilterQuery, Types } from 'mongoose';
 import { User, UserDocument } from './user.schema';
 import { Database, JWTConfig } from 'src/config';
 import { LoginResponse, UserResponse } from './user.dto';
@@ -17,8 +17,11 @@ export class UserService {
     private readonly serverConfigService: ServerConfigService,
   ) {}
 
-  async findById(id: string) {
-    return await this.userModel.findById(id).exec();
+  async findById(id: string | ObjectId) {
+    if (id && Types.ObjectId.isValid(id + '')) {
+      return await this.userModel.findById(id).exec();
+    }
+    return undefined;
   }
 
   async findOne(filters: RootFilterQuery<User>) {

@@ -1,6 +1,6 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, RootFilterQuery } from 'mongoose';
+import { Model, ObjectId, RootFilterQuery, Types } from 'mongoose';
 import { Constants, Database } from 'src/config';
 import { Message, MessageDocument } from './message.schema';
 import { MessageAttachmentDocument } from './message-attachment.schema';
@@ -25,9 +25,9 @@ export class MessageService {
     private readonly userService: UserService,
   ) {}
 
-  async findById(id: string | undefined) {
-    if (id) {
-      return await this.messageModel.findById(id);
+  async findById(id: string | ObjectId) {
+    if (id && Types.ObjectId.isValid(id + '')) {
+      return await this.messageModel.findById(new Types.ObjectId(id + ''));
     }
     return undefined;
   }
@@ -58,17 +58,19 @@ export class MessageService {
   }
 
   async create(senderId: string, data: SendMessageInput) {
-    const [room, user] = await Promise.all([
+    const [room, user, replyOnMessage] = await Promise.all([
       this.roomService.findById(data.roomId),
       this.userService.findById(senderId),
+      this.findById(data.message.replyOn),
     ]);
 
-    if (room && user) {
+    if (room && user && replyOnMessage) {
       const message = await this.messageModel.create({
         roomId: data.roomId,
         sender: user._id,
         content: data.message.content,
         attachments: data.message.attachments,
+        replyOn: replyOnMessage?._id,
       });
 
       room.lastMessage = message._id;
@@ -94,7 +96,9 @@ export class MessageService {
       participant.user,
     );
 
-    return new MessageResponse(message, userResponse);
+    const replyOn = await this.findById(message.replyOn);
+
+    return new MessageResponse(message, userResponse, replyOn);
   }
 
   async makeMessagesResponse(messages: Message[], roomId: string) {

@@ -9,8 +9,9 @@ import { Database } from 'src/config';
 export class Message {
   _id: Schema.Types.ObjectId;
   roomId: Schema.Types.ObjectId;
-  sender: Types.ObjectId;
-  content: string | undefined;
+  sender: Schema.Types.ObjectId;
+  replyOn?: Schema.Types.ObjectId;
+  content: string | null;
   attachments: MessageAttachmentDocument[];
   readBy: MessageReadDocument[];
   createdAt: Date;
@@ -30,6 +31,12 @@ export const MessageSchema = new Schema(
       type: Types.ObjectId,
       ref: Database.Collections.User,
       required: true,
+    },
+    replyOn: {
+      type: Types.ObjectId,
+      ref: Database.Collections.Message,
+      required: false,
+      default: null,
     },
     content: {
       type: String,

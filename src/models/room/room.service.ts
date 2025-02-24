@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, RootFilterQuery } from 'mongoose';
+import { Model, ObjectId, RootFilterQuery, Types } from 'mongoose';
 import { Constants, Database } from 'src/config';
 import { Room, RoomDocument, RoomParticipantDocument } from './room.schema';
 import { User, UserDocument } from '../user/user.schema';
@@ -29,8 +29,11 @@ export class RoomService {
     private readonly messageService: MessageService,
   ) {}
 
-  async findById(id: string) {
-    return await this.roomModel.findById(id).exec();
+  async findById(id: string | ObjectId) {
+    if (id && Types.ObjectId.isValid(id + '')) {
+      return await this.roomModel.findById(id).exec();
+    }
+    return undefined;
   }
 
   async findOne(filters: RootFilterQuery<Room>) {
@@ -217,7 +220,7 @@ export class RoomService {
 
     const [participants, message] = await Promise.all([
       this.getRoomParticipants(room),
-      this.messageService.findById(room.lastMessage + ''),
+      this.messageService.findById(room.lastMessage),
     ]);
 
     let roomName: string | undefined = undefined;
