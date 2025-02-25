@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsObject } from 'class-validator';
 import { ArrayDataResponse, FindAllDto } from 'src/common/global.dto';
 import { UserResponse } from 'src/models/user/user.dto';
 import { StringUtils } from 'src/utils';
@@ -19,6 +19,11 @@ export class CreateUserBody {
   @IsOptional()
   @IsString()
   avatarURL: string | undefined;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsObject()
+  metadata: object | undefined;
 }
 
 export class LoginBody {

@@ -16,6 +16,9 @@ export class UserResponse {
   @ApiProperty({ nullable: true })
   lastSeen: Date;
 
+  @ApiProperty({ type: Object, nullable: true })
+  metadata: object;
+
   constructor(user: User) {
     this.id = user._id + '';
     this.name = user.name;
@@ -23,6 +26,7 @@ export class UserResponse {
     this.avatarURL = user.avatarURL;
     this.isOnline = user.isOnline;
     this.lastSeen = user.lastSeen;
+    this.metadata = user.metadata;
   }
 }
 

@@ -89,6 +89,7 @@ export class UserService {
     user.username = newUserDate.username;
     user.name = newUserDate.name;
     user.avatarURL = newUserDate.avatarURL;
+    user.metadata = newUserDate.metadata;
 
     return await user.save();
   }

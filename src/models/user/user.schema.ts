@@ -7,6 +7,7 @@ export class User {
   avatarURL: string | undefined;
   isOnline: boolean;
   lastSeen: Date | undefined;
+  metadata: object;
 }
 
 export type UserDocument = User & Document<User>;
@@ -18,6 +19,7 @@ export const UserSchema = new Schema(
     avatarURL: { type: String, required: false },
     isOnline: { type: Boolean, default: false },
     lastSeen: { type: Date, default: null, nullable: true },
+    metadata: { type: Object, nullable: true },
   },
   { timestamps: true },
 );
