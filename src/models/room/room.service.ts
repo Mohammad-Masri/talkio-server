@@ -263,6 +263,11 @@ export class RoomService {
     return participants;
   }
 
+  async isUserParticipant(room: Room, userId: string) {
+    const participant = room.participants.find((p) => p.userId + '' === userId);
+    return participant ? true : false;
+  }
+
   async makeParticipantResponse(
     user: UserResponse,
     role: Constants.ParticipantRoles,

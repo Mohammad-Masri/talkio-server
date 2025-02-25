@@ -7,9 +7,14 @@ import { MessageAttachmentDocument } from './message-attachment.schema';
 import { MessageReadDocument } from './message-read.schema';
 import { RoomService } from '../room/room.service';
 import { UserService } from '../user/user.service';
-import { SendMessageInput } from 'src/gateway/chat/dto';
+import {
+  MessageAttachmentInput,
+  SendMessageInput,
+  UpdateMessageInput,
+} from 'src/gateway/chat/dto';
 import { MessageResponse } from './message.dto';
 import { User } from '../user/user.schema';
+import { Room } from '../room/room.schema';
 
 @Injectable()
 export class MessageService {
@@ -32,10 +37,16 @@ export class MessageService {
     return undefined;
   }
 
+  async createMessageAttachment(data: MessageAttachmentInput) {
+    return await this.messageAttachmentModel.create({
+      URL: data.URL,
+      mimeType: data.mimeType,
+    });
+  }
+
   async findMessagesInRoom(
     roomId: string,
     lastMessageId: string | undefined,
-    page: number = 1,
     limit: number = 100,
   ) {
     const filters: RootFilterQuery<Message> = {};
@@ -43,11 +54,8 @@ export class MessageService {
       filters._id = { $lt: lastMessageId };
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
-
     const messages = await this.messageModel
       .find({ roomId, ...filters })
-      .skip(skip)
       .limit(limit)
       .sort({ _id: -1 })
       .exec();
@@ -64,12 +72,14 @@ export class MessageService {
       this.findById(data.message.replyOn),
     ]);
 
-    if (room && user && replyOnMessage) {
+    if (room && user) {
       const message = await this.messageModel.create({
         roomId: data.roomId,
         sender: user._id,
         content: data.message.content,
-        attachments: data.message.attachments,
+        attachments: await Promise.all(
+          data.message.attachments.map((a) => this.createMessageAttachment(a)),
+        ),
         replyOn: replyOnMessage?._id,
       });
 
@@ -79,6 +89,57 @@ export class MessageService {
     }
 
     return undefined;
+  }
+
+  async updateForUser(data: UpdateMessageInput, userId: string) {
+    const [message, replyOnMessage] = await Promise.all([
+      this.findById(data.messageId),
+      this.findById(data.message.replyOn),
+    ]);
+
+    if (message) {
+      const isSender = await this.isSender(message, userId);
+
+      if (isSender) {
+        message.content = data.message.content;
+        message.attachments = await Promise.all(
+          data.message.attachments.map((a) => this.createMessageAttachment(a)),
+        );
+        message.replyOn = replyOnMessage?._id;
+      }
+
+      return await message.save();
+    }
+
+    return undefined;
+  }
+
+  async isSender(message: Message, userId: string) {
+    return message.sender + '' === userId;
+  }
+
+  async isAlreadyRead(message: Message, userId: string) {
+    const read = message.readBy.find((r) => r.readBy + '' === userId);
+    return read ? true : false;
+  }
+
+  async markAsRead(room: Room, message: MessageDocument, userId: string) {
+    if (message.sender + '' !== userId) {
+      const isParticipant = this.roomService.isUserParticipant(room, userId);
+      if (isParticipant) {
+        const isAlreadyRead = await this.isAlreadyRead(message, userId);
+        if (!isAlreadyRead) {
+          const read = await this.messageReadModel.create({
+            readBy: userId,
+          });
+
+          message.readBy.push(read);
+          return message.save();
+        }
+      }
+    }
+
+    return message;
   }
 
   async makeMessageResponse(
@@ -96,9 +157,14 @@ export class MessageService {
       participant.user,
     );
 
-    const replyOn = await this.findById(message.replyOn);
+    let replyOnResponse: MessageResponse | undefined = undefined;
 
-    return new MessageResponse(message, userResponse, replyOn);
+    const replyOn = await this.findById(message.replyOn);
+    if (replyOn) {
+      replyOnResponse = await this.makeMessageResponse(replyOn, participants);
+    }
+
+    return new MessageResponse(message, userResponse, replyOnResponse);
   }
 
   async makeMessagesResponse(messages: Message[], roomId: string) {
@@ -113,5 +179,19 @@ export class MessageService {
       return messagesResponse;
     }
     return [];
+  }
+
+  async deleteForUser(message: MessageDocument, userId: string) {
+    const isSender = await this.isSender(message, userId);
+    if (isSender) {
+      this.delete(message);
+      return true;
+    }
+
+    return false;
+  }
+
+  private async delete(message: MessageDocument) {
+    return message.deleteOne();
   }
 }

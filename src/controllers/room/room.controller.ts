@@ -90,7 +90,6 @@ export class RoomController {
     const { messages, hasMore } = await this.messageService.findMessagesInRoom(
       room._id + '',
       query.lastMessageId,
-      query.page,
       query.limit,
     );
 

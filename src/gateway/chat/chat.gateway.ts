@@ -12,8 +12,10 @@ import { Server, Socket } from 'socket.io';
 import { ChatEvents } from 'src/config/constants';
 import { ServerConfigService } from 'src/models/server-config/server-config.service';
 import {
+  DeleteMessageResponse,
   JoinLeaveRoomInput,
   ReadDeleteMessageInput,
+  ReadMessageResponse,
   SendMessageInput,
   UpdateMessageInput,
 } from './dto';
@@ -216,7 +218,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
     if (!valid) return;
 
-    this.server.to(body.roomId).emit(ChatEvents.Send.MessageReaded, body);
+    const [room, message] = await Promise.all([
+      await this.roomService.findById(body.roomId),
+      this.messageService.findById(body.messageId),
+    ]);
+
+    if (room && message) {
+      const userId = client.data.id;
+
+      await this.messageService.markAsRead(room, message, userId);
+
+      this.server
+        .to(body.roomId)
+        .emit(
+          ChatEvents.Send.MessageReaded,
+          new ReadMessageResponse(room._id + '', message._id + '', new Date()),
+        );
+    }
   }
 
   @SubscribeMessage(ChatEvents.Receive.UpdateMessage)
@@ -233,7 +251,30 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
     if (!valid) return;
 
-    this.server.to(body.roomId).emit(ChatEvents.Send.MessageUpdated, body);
+    const [room, message] = await Promise.all([
+      await this.roomService.findById(body.roomId),
+      this.messageService.findById(body.messageId),
+    ]);
+
+    if (room && message) {
+      const updatedMessage = await this.messageService.updateForUser(
+        body,
+        client.data.id,
+      );
+
+      if (updatedMessage) {
+        const participants = await this.roomService.getRoomParticipants(room);
+
+        const messageResponse = await this.messageService.makeMessageResponse(
+          updatedMessage,
+          participants,
+        );
+
+        this.server
+          .to(body.roomId)
+          .emit(ChatEvents.Send.MessageUpdated, messageResponse);
+      }
+    }
   }
 
   @SubscribeMessage(ChatEvents.Receive.DeleteMessage)
@@ -249,7 +290,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       ChatEvents.Receive.DeleteMessage,
     );
     if (!valid) return;
+    const userId = client.data.id;
 
-    this.server.to(body.roomId).emit(ChatEvents.Send.MessageDeleted, body);
+    const [room, message] = await Promise.all([
+      await this.roomService.findById(body.roomId),
+      this.messageService.findById(body.messageId),
+    ]);
+
+    if (room && message) {
+      const deleted = await this.messageService.deleteForUser(message, userId);
+
+      if (deleted) {
+        this.server
+          .to(body.roomId)
+          .emit(
+            ChatEvents.Send.MessageDeleted,
+            new DeleteMessageResponse(room._id + '', message._id + ''),
+          );
+      }
+    }
   }
 }

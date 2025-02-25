@@ -38,8 +38,8 @@ export class MessageResponse {
   id: string;
   @ApiProperty()
   roomId: string;
-  @ApiProperty({ nullable: true })
-  replyOn: ReplyOnMessageResponse | undefined;
+  @ApiProperty({ type: MessageResponse, nullable: true })
+  replyOn: MessageResponse | undefined;
   @ApiProperty({ nullable: true })
   content?: string;
 
@@ -49,6 +49,9 @@ export class MessageResponse {
   @ApiProperty({ type: UserResponse })
   sender: UserResponse | undefined;
 
+  @ApiProperty({ nullable: true })
+  readAt: Date | undefined;
+
   @ApiProperty()
   createdAt: Date;
   @ApiProperty()
@@ -57,18 +60,21 @@ export class MessageResponse {
   constructor(
     message: Message,
     sender: UserResponse | undefined,
-    replyOn: Message | undefined,
+    replyOn: MessageResponse | undefined,
   ) {
     this.id = message._id + '';
     this.roomId = message.roomId + '';
-    if (replyOn) {
-      this.replyOn = new ReplyOnMessageResponse(replyOn);
-    }
+    this.replyOn = replyOn;
     this.attachments = message.attachments.map(
       (a) => new MessageAttachmentResponse(a),
     );
     this.content = message.content;
     this.sender = sender;
+    const read = message.readBy.filter((r) => r.readBy + '' !== sender.id);
+    if (read.length) {
+      this.readAt = read[0].createdAt;
+    }
+
     this.createdAt = message.createdAt;
     this.updatedAt = message.updatedAt;
   }

@@ -3,6 +3,8 @@ import { Database } from 'src/config';
 
 export class MessageRead {
   readBy: Schema.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type MessageReadDocument = MessageRead & Document<MessageRead>;
