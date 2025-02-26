@@ -17,6 +17,8 @@ import {
   ReadDeleteMessageInput,
   ReadMessageResponse,
   SendMessageInput,
+  StartStopTypingInput,
+  StartStopTypingResponse,
   UpdateMessageInput,
 } from './dto';
 import { plainToInstance } from 'class-transformer';
@@ -196,6 +198,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const messageResponse = await this.messageService.makeMessageResponse(
           message,
           participants,
+          client.data.id,
         );
         this.server
           .to(body.roomId)
@@ -268,6 +271,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const messageResponse = await this.messageService.makeMessageResponse(
           updatedMessage,
           participants,
+          client.data.id,
         );
 
         this.server
@@ -308,6 +312,68 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             new DeleteMessageResponse(room._id + '', message._id + ''),
           );
       }
+    }
+  }
+
+  @SubscribeMessage(ChatEvents.Receive.StartTyping)
+  async startTyping(
+    @MessageBody()
+    body: StartStopTypingInput,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const valid = await this.validateDto(
+      StartStopTypingInput,
+      body,
+      client,
+      ChatEvents.Receive.StartTyping,
+    );
+    if (!valid) return;
+    const userId = client.data.id;
+
+    const [room, user] = await Promise.all([
+      this.roomService.findById(body.roomId),
+      this.userService.findById(userId),
+    ]);
+
+    if (room && user) {
+      const userResponse = await this.userService.makeUserResponse(user);
+      this.server
+        .to(body.roomId)
+        .emit(
+          ChatEvents.Send.TypingStarted,
+          new StartStopTypingResponse(room._id + '', userResponse),
+        );
+    }
+  }
+
+  @SubscribeMessage(ChatEvents.Receive.StopTyping)
+  async stopTyping(
+    @MessageBody()
+    body: StartStopTypingInput,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const valid = await this.validateDto(
+      StartStopTypingInput,
+      body,
+      client,
+      ChatEvents.Receive.StopTyping,
+    );
+    if (!valid) return;
+    const userId = client.data.id;
+
+    const [room, user] = await Promise.all([
+      this.roomService.findById(body.roomId),
+      this.userService.findById(userId),
+    ]);
+
+    if (room && user) {
+      const userResponse = await this.userService.makeUserResponse(user);
+      this.server
+        .to(body.roomId)
+        .emit(
+          ChatEvents.Send.TypingStopped,
+          new StartStopTypingResponse(room._id + '', userResponse),
+        );
     }
   }
 }

@@ -18,6 +18,8 @@ export const ChatEvents = {
     MessageReaded: 'message-readed',
     MessageUpdated: 'message-updated',
     MessageDeleted: 'message-deleted',
+    TypingStarted: 'typing-started',
+    TypingStopped: 'typing-stopped',
   },
   Receive: {
     JoinRoom: 'join-room',
@@ -26,5 +28,7 @@ export const ChatEvents = {
     ReadMessage: 'read-message',
     UpdateMessage: 'update-message',
     DeleteMessage: 'delete-message',
+    StartTyping: 'start-typing',
+    StopTyping: 'stop-typing',
   },
 };

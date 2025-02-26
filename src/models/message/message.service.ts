@@ -148,6 +148,7 @@ export class MessageService {
       user: User | undefined;
       role: Constants.ParticipantRoles;
     }[],
+    userId: string | undefined,
   ) {
     const participant = participants.find(
       (p) => p.user._id + '' === message.sender + '',
@@ -161,19 +162,27 @@ export class MessageService {
 
     const replyOn = await this.findById(message.replyOn);
     if (replyOn) {
-      replyOnResponse = await this.makeMessageResponse(replyOn, participants);
+      replyOnResponse = await this.makeMessageResponse(
+        replyOn,
+        participants,
+        userId,
+      );
     }
 
-    return new MessageResponse(message, userResponse, replyOnResponse);
+    return new MessageResponse(message, userResponse, replyOnResponse, userId);
   }
 
-  async makeMessagesResponse(messages: Message[], roomId: string) {
+  async makeMessagesResponse(
+    messages: Message[],
+    roomId: string,
+    userId: string | undefined,
+  ) {
     const room = await this.roomService.findById(roomId + '');
     if (room) {
       const participants = await this.roomService.getRoomParticipants(room);
 
       const messagesResponse: MessageResponse[] = await Promise.all(
-        messages.map((m) => this.makeMessageResponse(m, participants)),
+        messages.map((m) => this.makeMessageResponse(m, participants, userId)),
       );
 
       return messagesResponse;

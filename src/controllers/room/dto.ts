@@ -10,7 +10,7 @@ import {
 import { ArrayDataResponse, FindAllDto } from 'src/common/global.dto';
 import { Constants } from 'src/config';
 import { MessageResponse } from 'src/models/message/message.dto';
-import { RoomResponse } from 'src/models/room/room.dto';
+import { ShortRoomResponse } from 'src/models/room/room.dto';
 
 class ParticipantInput {
   @ApiProperty()
@@ -66,12 +66,12 @@ export class FindRoomMessagesDto extends FindAllDto {
   lastMessageId?: string;
 }
 
-export class RoomArrayDataResponse extends ArrayDataResponse<RoomResponse> {
-  @ApiProperty({ type: RoomResponse, isArray: true })
-  data: RoomResponse[];
+export class RoomArrayDataResponse extends ArrayDataResponse<ShortRoomResponse> {
+  @ApiProperty({ type: ShortRoomResponse, isArray: true })
+  data: ShortRoomResponse[];
   constructor(
     totalCount: number,
-    data: Array<RoomResponse>,
+    data: Array<ShortRoomResponse>,
     page: number,
     limit: number,
   ) {

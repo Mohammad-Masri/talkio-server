@@ -10,7 +10,11 @@ import { Constants, Database } from 'src/config';
 import { Room, RoomDocument, RoomParticipantDocument } from './room.schema';
 import { User, UserDocument } from '../user/user.schema';
 import { UserService } from '../user/user.service';
-import { ParticipantResponse, RoomResponse } from './room.dto';
+import {
+  FullRoomResponse,
+  ParticipantResponse,
+  ShortRoomResponse,
+} from './room.dto';
 import { UserResponse } from '../user/user.dto';
 import { RoomArrayDataResponse } from 'src/controllers/room/dto';
 import { MessageResponse } from '../message/message.dto';
@@ -215,7 +219,11 @@ export class RoomService {
     return room;
   }
 
-  async makeRoomResponse(room: Room, userId: string | undefined) {
+  async makeRoomResponse(
+    room: Room,
+    userId: string | undefined,
+    fullDetails = false,
+  ) {
     let lastMessageResponse: MessageResponse | undefined = undefined;
 
     const [participants, message] = await Promise.all([
@@ -233,17 +241,40 @@ export class RoomService {
       lastMessageResponse = await this.messageService.makeMessageResponse(
         message,
         participants,
+        userId,
       );
     }
 
-    return new RoomResponse(room, lastMessageResponse, roomName);
+    if (fullDetails) {
+      const participants = await this.getRoomParticipants(room);
+
+      const participantsResponse =
+        await this.makeParticipantsResponse(participants);
+
+      return new FullRoomResponse(
+        room,
+        lastMessageResponse,
+        roomName,
+        participantsResponse,
+      );
+    }
+
+    return new ShortRoomResponse(room, lastMessageResponse, roomName);
   }
 
-  async makeRoomsResponse(rooms: Room[], userId: string | undefined) {
-    const roomsResponse: RoomResponse[] = [];
+  async makeRoomsResponse(
+    rooms: Room[],
+    userId: string | undefined,
+    fullDetails = false,
+  ) {
+    const roomsResponse: ShortRoomResponse[] = [];
     for (let i = 0; i < rooms.length; i++) {
       const room = rooms[i];
-      const roomResponse = await this.makeRoomResponse(room, userId);
+      const roomResponse = await this.makeRoomResponse(
+        room,
+        userId,
+        fullDetails,
+      );
       roomsResponse.push(roomResponse);
     }
     return roomsResponse;
@@ -294,7 +325,7 @@ export class RoomService {
 
   async makeRoomArrayDataResponse(
     totalCount: number,
-    data: Array<RoomResponse>,
+    data: Array<ShortRoomResponse>,
     page: number,
     limit: number,
   ) {

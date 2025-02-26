@@ -8,6 +8,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { UserResponse } from 'src/models/user/user.dto';
 
 export class JoinLeaveRoomInput {
   @IsString()
@@ -99,5 +100,23 @@ export class DeleteMessageResponse {
   constructor(roomId: string, messageId: string) {
     this.roomId = roomId;
     this.messageId = messageId;
+  }
+}
+
+export class StartStopTypingInput {
+  @IsString()
+  @IsNotEmpty()
+  roomId: string;
+}
+
+export class StartStopTypingResponse {
+  @ApiProperty()
+  roomId: string;
+  @ApiProperty({ type: UserResponse })
+  user: UserResponse;
+
+  constructor(roomId: string, user: UserResponse) {
+    this.roomId = roomId;
+    this.user = user;
   }
 }

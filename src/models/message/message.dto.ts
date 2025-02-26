@@ -49,6 +49,9 @@ export class MessageResponse {
   @ApiProperty({ type: UserResponse })
   sender: UserResponse | undefined;
 
+  @ApiProperty({ type: Boolean })
+  readedByMe: boolean;
+
   @ApiProperty({ nullable: true })
   readAt: Date | undefined;
 
@@ -61,6 +64,7 @@ export class MessageResponse {
     message: Message,
     sender: UserResponse | undefined,
     replyOn: MessageResponse | undefined,
+    userId: string | undefined,
   ) {
     this.id = message._id + '';
     this.roomId = message.roomId + '';
@@ -74,6 +78,10 @@ export class MessageResponse {
     if (read.length) {
       this.readAt = read[0].createdAt;
     }
+
+    this.readedByMe = message.readBy.find((r) => r.readBy + '' === userId)
+      ? true
+      : false;
 
     this.createdAt = message.createdAt;
     this.updatedAt = message.updatedAt;

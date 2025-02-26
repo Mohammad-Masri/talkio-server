@@ -5,7 +5,7 @@ import { UserResponse } from '../user/user.dto';
 import { MessageResponse } from '../message/message.dto';
 import { RoomTypes } from 'src/config/constants';
 
-export class RoomResponse {
+export class ShortRoomResponse {
   @ApiProperty()
   id: string;
   @ApiProperty()
@@ -40,5 +40,20 @@ export class ParticipantResponse {
   constructor(user: UserResponse, role: Constants.ParticipantRoles) {
     this.user = user;
     this.role = role;
+  }
+}
+
+export class FullRoomResponse extends ShortRoomResponse {
+  @ApiProperty({ type: ParticipantResponse, isArray: true })
+  participants: ParticipantResponse[];
+
+  constructor(
+    room: Room,
+    lastMessage: MessageResponse | undefined,
+    roomName: string | undefined,
+    participants: ParticipantResponse[],
+  ) {
+    super(room, lastMessage, roomName);
+    this.participants = participants;
   }
 }

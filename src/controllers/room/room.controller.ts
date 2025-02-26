@@ -9,11 +9,14 @@ import {
 import { Request } from 'express';
 import { AuthorizedRequest } from 'src/common/global.dto';
 import { JWTAuthGuard } from 'src/guards/jwt-authentication.guard';
-import { MessageResponse } from 'src/models/message/message.dto';
 import { MessageService } from 'src/models/message/message.service';
-import { RoomResponse } from 'src/models/room/room.dto';
+import { FullRoomResponse } from 'src/models/room/room.dto';
 import { RoomService } from 'src/models/room/room.service';
-import { FindRoomMessagesDto, MessagesResponse } from './dto';
+import {
+  FindRoomMessagesDto,
+  MessagesResponse,
+  RoomArrayDataResponse,
+} from './dto';
 
 @Controller('/rooms')
 @ApiTags('User Room')
@@ -28,7 +31,7 @@ export class RoomController {
   @ApiOperation({ summary: 'get rooms' })
   @ApiOkResponse({
     description: 'Rooms fetched successfully',
-    type: Object,
+    type: RoomArrayDataResponse,
   })
   async fetchRooms(@Req() req: AuthorizedRequest & Request) {
     const userId = req.context.id;
@@ -38,6 +41,7 @@ export class RoomController {
     const roomsResponse = await this.roomService.makeRoomsResponse(
       rooms,
       userId,
+      false,
     );
 
     return roomsResponse;
@@ -52,7 +56,7 @@ export class RoomController {
   })
   @ApiOkResponse({
     description: 'Room fetched successfully',
-    type: RoomResponse,
+    type: FullRoomResponse,
   })
   @ApiNotFoundResponse({ description: 'Room not found' })
   async fetchRoomDetails(
@@ -62,7 +66,7 @@ export class RoomController {
     const userId = req.context.id;
 
     const room = await this.roomService.checkFoundById(id);
-    return await this.roomService.makeRoomResponse(room, userId);
+    return await this.roomService.makeRoomResponse(room, userId, true);
   }
 
   @Get('/:id/messages')
@@ -74,8 +78,7 @@ export class RoomController {
   })
   @ApiOkResponse({
     description: 'Messages fetched successfully',
-    type: MessageResponse,
-    isArray: true,
+    type: MessagesResponse,
   })
   @ApiNotFoundResponse({ description: 'Room not found' })
   async getMessages(
@@ -96,6 +99,7 @@ export class RoomController {
     const messagesResponse = await this.messageService.makeMessagesResponse(
       messages,
       room._id + '',
+      userId,
     );
     return new MessagesResponse(messagesResponse, hasMore);
   }

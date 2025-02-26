@@ -28,7 +28,11 @@ import {
   RoomArrayDataResponse,
   UpdateRoomBody,
 } from './dto';
-import { ParticipantResponse, RoomResponse } from 'src/models/room/room.dto';
+import {
+  FullRoomResponse,
+  ParticipantResponse,
+  ShortRoomResponse,
+} from 'src/models/room/room.dto';
 import { RootFilterQuery } from 'mongoose';
 import { Room } from 'src/models/room/room.schema';
 
@@ -42,7 +46,7 @@ export class RoomManagementController {
   @ApiOperation({ summary: 'Create a new room' })
   @ApiCreatedResponse({
     description: 'The room has been successfully created.',
-    type: RoomResponse,
+    type: ShortRoomResponse,
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   async createNewRoom(@Body() body: CreateRoomBody) {
@@ -101,12 +105,12 @@ export class RoomManagementController {
   })
   @ApiOkResponse({
     description: 'Room fetched successfully',
-    type: RoomResponse,
+    type: FullRoomResponse,
   })
   @ApiNotFoundResponse({ description: 'Room not found' })
   async fetchRoomDetails(@Param('id') id: string) {
     const room = await this.roomService.checkFoundById(id);
-    return await this.roomService.makeRoomResponse(room, undefined);
+    return await this.roomService.makeRoomResponse(room, undefined, true);
   }
 
   @Get('/:id/participants')
@@ -139,7 +143,7 @@ export class RoomManagementController {
   })
   @ApiOkResponse({
     description: 'room details updated successfully',
-    type: RoomResponse,
+    type: ShortRoomResponse,
   })
   @ApiNotFoundResponse({ description: 'Room not found' })
   async updateRoomDetails(
@@ -215,7 +219,7 @@ export class RoomManagementController {
   })
   @ApiOkResponse({
     description: 'Room deleted successfully',
-    type: RoomResponse,
+    type: ShortRoomResponse,
   })
   @ApiNotFoundResponse({ description: 'Room not found' })
   async deleteRoom(@Param('id') id: string) {
