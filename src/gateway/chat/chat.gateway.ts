@@ -12,11 +12,19 @@ import { Server, Socket } from 'socket.io';
 import { ChatEvents } from 'src/config/constants';
 import { ServerConfigService } from 'src/models/server-config/server-config.service';
 import {
+  AnswerCallOfferInput,
+  AnswerCallOfferResponse,
+  CallOfferResponse,
+  CandidateResponse,
+  DeclineCallOfferInput,
+  DeclineCallOfferResponse,
   DeleteMessageResponse,
   JoinLeaveRoomInput,
   ReadDeleteMessageInput,
   ReadMessageResponse,
+  SendCallOfferInput,
   SendMessageInput,
+  ShareCandidateInput,
   StartStopTypingInput,
   StartStopTypingResponse,
   UpdateMessageInput,
@@ -373,6 +381,116 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .emit(
           ChatEvents.Send.TypingStopped,
           new StartStopTypingResponse(room._id + '', userResponse),
+        );
+    }
+  }
+
+  @SubscribeMessage(ChatEvents.Receive.SendCallOffer)
+  async sendCallOffer(
+    @MessageBody()
+    body: SendCallOfferInput,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const valid = await this.validateDto(
+      SendCallOfferInput,
+      body,
+      client,
+      ChatEvents.Receive.SendCallOffer,
+    );
+    if (!valid) return;
+
+    const room = await this.roomService.findById(body.roomId);
+
+    if (room) {
+      client
+        .to(body.roomId)
+        .emit(
+          ChatEvents.Send.CallOfferReceived,
+          new CallOfferResponse(room._id + '', client.data.id, body.offer),
+        );
+    }
+  }
+
+  @SubscribeMessage(ChatEvents.Receive.AnswerCallOffer)
+  async answerCallOffer(
+    @MessageBody()
+    body: AnswerCallOfferInput,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const valid = await this.validateDto(
+      AnswerCallOfferInput,
+      body,
+      client,
+      ChatEvents.Receive.AnswerCallOffer,
+    );
+    if (!valid) return;
+
+    const room = await this.roomService.findById(body.roomId);
+
+    if (room) {
+      client
+        .to(body.roomId)
+        .emit(
+          ChatEvents.Send.CallOfferAnswered,
+          new AnswerCallOfferResponse(
+            room._id + '',
+            client.data.id,
+            body.answer,
+          ),
+        );
+    }
+  }
+
+  @SubscribeMessage(ChatEvents.Receive.declineCallOffer)
+  async declineCallOffer(
+    @MessageBody()
+    body: DeclineCallOfferInput,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const valid = await this.validateDto(
+      DeclineCallOfferInput,
+      body,
+      client,
+      ChatEvents.Receive.declineCallOffer,
+    );
+    if (!valid) return;
+
+    console.log('declineCallOffer\n', body);
+
+    const room = await this.roomService.findById(body.roomId);
+
+    if (room) {
+      client
+        .to(body.roomId)
+        .emit(
+          ChatEvents.Send.CallOfferDeclined,
+          new DeclineCallOfferResponse(room._id + '', client.data.id),
+        );
+    }
+  }
+
+  @SubscribeMessage(ChatEvents.Receive.ShareCandidate)
+  async shareCandidate(
+    @MessageBody()
+    body: ShareCandidateInput,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const valid = await this.validateDto(
+      ShareCandidateInput,
+      body,
+      client,
+      ChatEvents.Receive.ShareCandidate,
+    );
+    if (!valid) return;
+
+    const room = await this.roomService.findById(body.roomId);
+
+    if (room) {
+      client
+        .to(body.roomId)
+        .emit(
+          ChatEvents.Send.CandidateReceived,
+          new CandidateResponse(room._id + '', client.data.id, body.candidate),
         );
     }
   }

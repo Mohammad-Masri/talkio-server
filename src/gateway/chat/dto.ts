@@ -4,6 +4,7 @@ import {
   IsArray,
   IsNotEmpty,
   IsNotEmptyObject,
+  IsObject,
   IsOptional,
   IsString,
   ValidateNested,
@@ -118,5 +119,95 @@ export class StartStopTypingResponse {
   constructor(roomId: string, user: UserResponse) {
     this.roomId = roomId;
     this.user = user;
+  }
+}
+
+export class SendCallOfferInput {
+  @IsString()
+  @IsNotEmpty()
+  roomId: string;
+
+  @IsObject()
+  offer: any;
+}
+
+export class CallOfferResponse {
+  @ApiProperty()
+  roomId: string;
+  @ApiProperty()
+  from: string;
+  @ApiProperty({ type: Object })
+  offer: any;
+
+  constructor(roomId: string, from: string, offer: any) {
+    this.roomId = roomId;
+    this.from = from;
+    this.offer = offer;
+  }
+}
+
+export class AnswerCallOfferInput {
+  @IsString()
+  @IsNotEmpty()
+  roomId: string;
+
+  @IsObject()
+  answer: any;
+}
+
+export class DeclineCallOfferInput {
+  @IsString()
+  @IsNotEmpty()
+  roomId: string;
+}
+
+export class AnswerCallOfferResponse {
+  @ApiProperty()
+  roomId: string;
+  @ApiProperty()
+  from: string;
+  @ApiProperty({ type: Object })
+  answer: any;
+
+  constructor(roomId: string, from: string, answer: any) {
+    this.roomId = roomId;
+    this.from = from;
+    this.answer = answer;
+  }
+}
+
+export class DeclineCallOfferResponse {
+  @ApiProperty()
+  roomId: string;
+  @ApiProperty()
+  from: string;
+
+  constructor(roomId: string, from: string) {
+    this.roomId = roomId;
+    this.from = from;
+  }
+}
+
+export class ShareCandidateInput {
+  @IsString()
+  @IsNotEmpty()
+  roomId: string;
+
+  @IsObject()
+  candidate: any;
+}
+
+export class CandidateResponse {
+  @ApiProperty()
+  roomId: string;
+  @ApiProperty()
+  from: string;
+  @ApiProperty({ type: Object })
+  candidate: any;
+
+  constructor(roomId: string, from: string, candidate: any) {
+    this.roomId = roomId;
+    this.from = from;
+    this.candidate = candidate;
   }
 }

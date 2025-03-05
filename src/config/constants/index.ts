@@ -20,6 +20,10 @@ export const ChatEvents = {
     MessageDeleted: 'message-deleted',
     TypingStarted: 'typing-started',
     TypingStopped: 'typing-stopped',
+    CallOfferReceived: 'call-offer-received',
+    CallOfferAnswered: 'call-offer-answered',
+    CallOfferDeclined: 'call-offer-declined',
+    CandidateReceived: 'candidate-received',
   },
   Receive: {
     JoinRoom: 'join-room',
@@ -30,5 +34,9 @@ export const ChatEvents = {
     DeleteMessage: 'delete-message',
     StartTyping: 'start-typing',
     StopTyping: 'stop-typing',
+    SendCallOffer: 'send-call-offer',
+    AnswerCallOffer: 'answer-call-offer',
+    declineCallOffer: 'decline-call-offer',
+    ShareCandidate: 'share-candidate',
   },
 };
