@@ -9,11 +9,12 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { ChatEvents } from 'src/config/constants';
+import { CallStatuses, ChatEvents } from 'src/config/constants';
 import { ServerConfigService } from 'src/models/server-config/server-config.service';
 import {
   AnswerCallOfferInput,
   AnswerCallOfferResponse,
+  CallInitializedResponse,
   CallOfferResponse,
   CandidateResponse,
   DeclineCallOfferInput,
@@ -34,6 +35,7 @@ import { validate, ValidationError } from 'class-validator';
 import { RoomService } from 'src/models/room/room.service';
 import { MessageService } from 'src/models/message/message.service';
 import { UserService } from 'src/models/user/user.service';
+import { CallService } from 'src/models/call/call.service';
 
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/gateway/chat' })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -46,6 +48,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly roomService: RoomService,
     private readonly messageService: MessageService,
     private readonly userService: UserService,
+    private readonly callService: CallService,
   ) {}
 
   private async getValidationErrors(
@@ -402,12 +405,30 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const room = await this.roomService.findById(body.roomId);
 
     if (room) {
-      client
-        .to(body.roomId)
-        .emit(
-          ChatEvents.Send.CallOfferReceived,
-          new CallOfferResponse(room._id + '', client.data.id, body.offer),
+      const call = await this.callService.create({
+        callerId: client.data.id,
+        roomId: room._id,
+      });
+
+      if (call) {
+        const callResponse = await this.callService.makeCallResponse(
+          call,
+          client.data.id,
         );
+
+        client.to(body.roomId).emit(
+          ChatEvents.Send.CallOfferReceived,
+          new CallOfferResponse(room._id + '', client.data.id, body.offer, {
+            ...callResponse,
+            isYouCaller: false,
+          }),
+        );
+
+        client.emit(
+          ChatEvents.Send.CallOfferInitialized,
+          new CallInitializedResponse(room._id + '', callResponse),
+        );
+      }
     }
   }
 
@@ -428,16 +449,25 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const room = await this.roomService.findById(body.roomId);
 
     if (room) {
-      client
-        .to(body.roomId)
-        .emit(
-          ChatEvents.Send.CallOfferAnswered,
-          new AnswerCallOfferResponse(
-            room._id + '',
-            client.data.id,
-            body.answer,
-          ),
-        );
+      const call = await this.callService.findOne({
+        roomId: room._id,
+        status: { $in: [CallStatuses.Ringing, CallStatuses.Ongoing] },
+      });
+
+      if (call) {
+        await this.callService.setCallStatus(call, CallStatuses.Ongoing);
+
+        client
+          .to(body.roomId)
+          .emit(
+            ChatEvents.Send.CallOfferAnswered,
+            new AnswerCallOfferResponse(
+              room._id + '',
+              client.data.id,
+              body.answer,
+            ),
+          );
+      }
     }
   }
 
@@ -455,17 +485,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
     if (!valid) return;
 
-    console.log('declineCallOffer\n', body);
-
     const room = await this.roomService.findById(body.roomId);
 
     if (room) {
-      client
-        .to(body.roomId)
-        .emit(
-          ChatEvents.Send.CallOfferDeclined,
-          new DeclineCallOfferResponse(room._id + '', client.data.id),
-        );
+      const call = await this.callService.findOne({
+        roomId: room._id,
+        status: { $in: [CallStatuses.Ringing, CallStatuses.Ongoing] },
+      });
+
+      if (call) {
+        await this.callService.setCallStatus(call, CallStatuses.Declined);
+
+        client
+          .to(body.roomId)
+          .emit(
+            ChatEvents.Send.CallOfferDeclined,
+            new DeclineCallOfferResponse(room._id + '', client.data.id),
+          );
+      }
     }
   }
 

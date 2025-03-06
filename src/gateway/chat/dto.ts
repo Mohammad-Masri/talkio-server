@@ -9,6 +9,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { CallResponse } from 'src/models/call/call.dto';
 import { UserResponse } from 'src/models/user/user.dto';
 
 export class JoinLeaveRoomInput {
@@ -131,6 +132,19 @@ export class SendCallOfferInput {
   offer: any;
 }
 
+export class CallInitializedResponse {
+  @ApiProperty()
+  roomId: string;
+
+  @ApiProperty({ type: CallResponse })
+  call: CallResponse;
+
+  constructor(roomId: string, call: CallResponse) {
+    this.roomId = roomId;
+    this.call = call;
+  }
+}
+
 export class CallOfferResponse {
   @ApiProperty()
   roomId: string;
@@ -138,11 +152,14 @@ export class CallOfferResponse {
   from: string;
   @ApiProperty({ type: Object })
   offer: any;
+  @ApiProperty({ type: CallResponse })
+  call: CallResponse;
 
-  constructor(roomId: string, from: string, offer: any) {
+  constructor(roomId: string, from: string, offer: any, call: CallResponse) {
     this.roomId = roomId;
     this.from = from;
     this.offer = offer;
+    this.call = call;
   }
 }
 

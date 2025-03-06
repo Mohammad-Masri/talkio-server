@@ -9,6 +9,7 @@ import { RoomModule } from './models/room/room.module';
 import { RoomManagementControllerModule } from './controllers/room/room-management.module';
 import { MessageModule } from './models/message/message.module';
 import { ChatModule } from './gateway/chat/chat.module';
+import { CallModule } from './models/call/call.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ChatModule } from './gateway/chat/chat.module';
     RoomManagementControllerModule,
     MessageModule,
     ChatModule,
+    CallModule,
   ],
   controllers: [AppController],
   providers: [AppService],

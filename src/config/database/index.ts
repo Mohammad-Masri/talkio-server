@@ -5,4 +5,5 @@ export enum Collections {
   Message = 'Message',
   MessageAttachment = 'MessageAttachment',
   MessageRead = 'MessageRead',
+  Call = 'Call',
 }

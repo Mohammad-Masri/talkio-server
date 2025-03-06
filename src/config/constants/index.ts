@@ -8,6 +8,16 @@ export enum ParticipantRoles {
   Member = 'Member',
 }
 
+export enum CallStatuses {
+  Ringing = 'Ringing',
+
+  Ongoing = 'Ongoing',
+
+  NoAnswer = 'NoAnswer',
+  Declined = 'Declined',
+  Ended = 'Ended',
+}
+
 export const ChatEvents = {
   Send: {
     UserConnected: 'user-connected',
@@ -20,6 +30,7 @@ export const ChatEvents = {
     MessageDeleted: 'message-deleted',
     TypingStarted: 'typing-started',
     TypingStopped: 'typing-stopped',
+    CallOfferInitialized: 'call-offer-initialized',
     CallOfferReceived: 'call-offer-received',
     CallOfferAnswered: 'call-offer-answered',
     CallOfferDeclined: 'call-offer-declined',
