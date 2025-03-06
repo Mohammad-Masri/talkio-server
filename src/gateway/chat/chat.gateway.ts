@@ -9,22 +9,22 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { ChatEvents } from 'src/config/constants';
+import { ChatEvents, RoomTypes } from 'src/config/constants';
 import { ServerConfigService } from 'src/models/server-config/server-config.service';
 import {
-  AnswerCallOfferInput,
-  AnswerCallOfferResponse,
-  CallOfferResponse,
+  AnswerPrivateCallInput,
   CandidateResponse,
-  DeclineCallOfferInput,
-  DeclineCallOfferResponse,
+  DeclinePrivateCallInput,
+  PrivateCallDeclinedResponse,
   DeleteMessageResponse,
   JoinLeaveRoomInput,
+  PrivateCallAnsweredResponse,
+  PrivateCallReceivedResponse,
   ReadDeleteMessageInput,
   ReadMessageResponse,
-  SendCallOfferInput,
   SendMessageInput,
   ShareCandidateInput,
+  StartPrivateCallInput,
   StartStopTypingInput,
   StartStopTypingResponse,
   UpdateMessageInput,
@@ -385,88 +385,105 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage(ChatEvents.Receive.SendCallOffer)
-  async sendCallOffer(
+  @SubscribeMessage(ChatEvents.Receive.StartPrivateCall)
+  async startPrivateCall(
     @MessageBody()
-    body: SendCallOfferInput,
+    body: StartPrivateCallInput,
     @ConnectedSocket() client: Socket,
   ) {
     const valid = await this.validateDto(
-      SendCallOfferInput,
+      StartPrivateCallInput,
       body,
       client,
-      ChatEvents.Receive.SendCallOffer,
+      ChatEvents.Receive.StartPrivateCall,
     );
     if (!valid) return;
 
     const room = await this.roomService.findById(body.roomId);
 
-    if (room) {
-      client
-        .to(body.roomId)
-        .emit(
-          ChatEvents.Send.CallOfferReceived,
-          new CallOfferResponse(room._id + '', client.data.id, body.offer),
-        );
-    }
+    if (!room || room?.type === RoomTypes.Group)
+      return client.emit('error', {
+        event: ChatEvents.Receive.StartPrivateCall,
+        message: `can't start a ${RoomTypes.Private} call, the room is not found or the room is not a ${RoomTypes.Private} room, it's ${room?.type} `,
+        errors: [],
+      });
+
+    client
+      .to(body.roomId)
+      .emit(
+        ChatEvents.Send.PrivateCallReceived,
+        new PrivateCallReceivedResponse(
+          room._id + '',
+          client.data.id,
+          body.offer,
+        ),
+      );
   }
 
-  @SubscribeMessage(ChatEvents.Receive.AnswerCallOffer)
-  async answerCallOffer(
+  @SubscribeMessage(ChatEvents.Receive.AnswerPrivateCall)
+  async answerPrivateCall(
     @MessageBody()
-    body: AnswerCallOfferInput,
+    body: AnswerPrivateCallInput,
     @ConnectedSocket() client: Socket,
   ) {
     const valid = await this.validateDto(
-      AnswerCallOfferInput,
+      AnswerPrivateCallInput,
       body,
       client,
-      ChatEvents.Receive.AnswerCallOffer,
+      ChatEvents.Receive.AnswerPrivateCall,
     );
     if (!valid) return;
 
     const room = await this.roomService.findById(body.roomId);
 
-    if (room) {
-      client
-        .to(body.roomId)
-        .emit(
-          ChatEvents.Send.CallOfferAnswered,
-          new AnswerCallOfferResponse(
-            room._id + '',
-            client.data.id,
-            body.answer,
-          ),
-        );
-    }
+    if (!room || room?.type === RoomTypes.Group)
+      return client.emit('error', {
+        event: ChatEvents.Receive.AnswerPrivateCall,
+        message: `can't answer the ${RoomTypes.Private} call, the room is not found or the room is not a ${RoomTypes.Private} room, it's ${room?.type} `,
+        errors: [],
+      });
+
+    client
+      .to(body.roomId)
+      .emit(
+        ChatEvents.Send.PrivateCallAnswered,
+        new PrivateCallAnsweredResponse(
+          room._id + '',
+          client.data.id,
+          body.answer,
+        ),
+      );
   }
 
-  @SubscribeMessage(ChatEvents.Receive.declineCallOffer)
-  async declineCallOffer(
+  @SubscribeMessage(ChatEvents.Receive.DeclinePrivateCall)
+  async declinePrivateCall(
     @MessageBody()
-    body: DeclineCallOfferInput,
+    body: DeclinePrivateCallInput,
     @ConnectedSocket() client: Socket,
   ) {
     const valid = await this.validateDto(
-      DeclineCallOfferInput,
+      DeclinePrivateCallInput,
       body,
       client,
-      ChatEvents.Receive.declineCallOffer,
+      ChatEvents.Receive.DeclinePrivateCall,
     );
     if (!valid) return;
 
-    console.log('declineCallOffer\n', body);
-
     const room = await this.roomService.findById(body.roomId);
 
-    if (room) {
-      client
-        .to(body.roomId)
-        .emit(
-          ChatEvents.Send.CallOfferDeclined,
-          new DeclineCallOfferResponse(room._id + '', client.data.id),
-        );
-    }
+    if (!room || room?.type === RoomTypes.Group)
+      return client.emit('error', {
+        event: ChatEvents.Receive.AnswerPrivateCall,
+        message: `can't decline the ${RoomTypes.Private} call, the room is not found or the room is not a ${RoomTypes.Private} room, it's ${room?.type} `,
+        errors: [],
+      });
+
+    client
+      .to(body.roomId)
+      .emit(
+        ChatEvents.Send.PrivateCallDeclined,
+        new PrivateCallDeclinedResponse(room._id + '', client.data.id),
+      );
   }
 
   @SubscribeMessage(ChatEvents.Receive.ShareCandidate)

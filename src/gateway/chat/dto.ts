@@ -122,7 +122,7 @@ export class StartStopTypingResponse {
   }
 }
 
-export class SendCallOfferInput {
+export class StartPrivateCallInput {
   @IsString()
   @IsNotEmpty()
   roomId: string;
@@ -131,7 +131,7 @@ export class SendCallOfferInput {
   offer: any;
 }
 
-export class CallOfferResponse {
+export class PrivateCallReceivedResponse {
   @ApiProperty()
   roomId: string;
   @ApiProperty()
@@ -146,7 +146,7 @@ export class CallOfferResponse {
   }
 }
 
-export class AnswerCallOfferInput {
+export class AnswerPrivateCallInput {
   @IsString()
   @IsNotEmpty()
   roomId: string;
@@ -155,13 +155,7 @@ export class AnswerCallOfferInput {
   answer: any;
 }
 
-export class DeclineCallOfferInput {
-  @IsString()
-  @IsNotEmpty()
-  roomId: string;
-}
-
-export class AnswerCallOfferResponse {
+export class PrivateCallAnsweredResponse {
   @ApiProperty()
   roomId: string;
   @ApiProperty()
@@ -176,7 +170,13 @@ export class AnswerCallOfferResponse {
   }
 }
 
-export class DeclineCallOfferResponse {
+export class DeclinePrivateCallInput {
+  @IsString()
+  @IsNotEmpty()
+  roomId: string;
+}
+
+export class PrivateCallDeclinedResponse {
   @ApiProperty()
   roomId: string;
   @ApiProperty()

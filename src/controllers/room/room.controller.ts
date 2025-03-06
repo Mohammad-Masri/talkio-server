@@ -12,11 +12,7 @@ import { JWTAuthGuard } from 'src/guards/jwt-authentication.guard';
 import { MessageService } from 'src/models/message/message.service';
 import { FullRoomResponse } from 'src/models/room/room.dto';
 import { RoomService } from 'src/models/room/room.service';
-import {
-  FindRoomMessagesDto,
-  MessagesResponse,
-  RoomArrayDataResponse,
-} from './dto';
+import { FindRoomMessagesDto, MessagesResponse } from './dto';
 
 @Controller('/rooms')
 @ApiTags('User Room')
@@ -31,7 +27,8 @@ export class RoomController {
   @ApiOperation({ summary: 'get rooms' })
   @ApiOkResponse({
     description: 'Rooms fetched successfully',
-    type: RoomArrayDataResponse,
+    type: FullRoomResponse,
+    isArray: true,
   })
   async fetchRooms(@Req() req: AuthorizedRequest & Request) {
     const userId = req.context.id;
@@ -41,7 +38,7 @@ export class RoomController {
     const roomsResponse = await this.roomService.makeRoomsResponse(
       rooms,
       userId,
-      false,
+      true,
     );
 
     return roomsResponse;
